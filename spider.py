@@ -32,8 +32,6 @@ def print_table(bs_obj):
         if row[0] == '上午' or row[0] == '下午' or row[0] == '晚上':
             row.remove(row[0])
     table.pop()
-    for row in table:
-        print(row)
 
     pretty_table = PrettyTable()
     pretty_table.field_names = table[0]
@@ -43,7 +41,6 @@ def print_table(bs_obj):
 
 
 def parse_table(table_url, session):
-    # print(table_url)
     response = session.get(table_url)
     bs_obj = BeautifulSoup(response.text, 'lxml')
     viewstate = bs_obj.find('input', {'name': '__VIEWSTATE'})['value']
@@ -73,13 +70,13 @@ def parse_table(table_url, session):
     #              'xnd': '2017-2018', 'xqd': '1'}
     # table_page = session.post(table_url, post_data).text
     # bs_obj = BeautifulSoup(table_page, 'lxml')
+
     print_table(bs_obj)
 
 
 def spider(response, session):
     url = response.url
-    print('---------------')
-    # print(url)
+    print('-------------------')
     base_url = url[:25]
     bs_obj = BeautifulSoup(response.text, 'lxml')
 
@@ -112,8 +109,6 @@ def login(url, session):
     while True:
         username = input('请输入学号:')
         password = input('请输入密码:')
-        # username = '169024014'
-        # password = '960714sxd'
         html = session.get(url).text
         bs_obj = BeautifulSoup(html, 'html.parser')
         viewstate = bs_obj.find('input', {'name': '__VIEWSTATE'})['value']
