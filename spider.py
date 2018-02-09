@@ -46,11 +46,15 @@ def parse_table(table_url, session):
     viewstate = bs_obj.find('input', {'name': '__VIEWSTATE'})['value']
     table = bs_obj.find('span', {'class': 'formbox'})
 
+    # 抽取学年学期选项信息
     tr = table.find('table', {'class': 'formlist noprint'}).find('tr')
     xn_options = tr.find('select').find_all('option')
     xn_options = [option.get_text() for option in xn_options]
     xq_options = ['1', '2']
+    xn_default = tr.find('select', {'name': 'xnd'}).find('option', {'selected': 'selected'}).string
+    xq_default = tr.find('select', {'name': 'xqd'}).find('option', {'selected': 'selected'}).string
 
+    # 抽取并显示学生个人信息
     tr = table.find('table', {'class': 'formlist noprint'}).find('tr', {'class': 'trbg1'})
     infos = tr.find_all('span')
     infos = [info.get_text() for info in infos]
@@ -59,19 +63,37 @@ def parse_table(table_url, session):
         print(info, end='  ')
     print('\n---------------------------------------------------------------------------')
 
-    # while True:
-    #     xn = input('请输入学年: '+str(xn_options)+' ')
-    #     xq = input('请输入学期: '+str(xq_options)+' ')
-    #     if xn in xn_options and xq in xq_options:
-    #         break
-    #     else:
-    #         print('请输入选项内的信息')
-    # post_data = {'__EVENTTARGET': 'xqd', '__EVENTARGUMENT': '', '__VIEWSTATE': viewstate,
-    #              'xnd': '2017-2018', 'xqd': '1'}
-    # table_page = session.post(table_url, post_data).text
-    # bs_obj = BeautifulSoup(table_page, 'lxml')
+    # 更改学年学期菜单
+    print('当前参数为：{}学年 第{}学期'.format(xn_default, xq_default))
+    while True:
+        xn = input('>请输入学年: ' + str(xn_options) + ' ')
+        if xn not in xn_options:
+            print('请输入选项内的信息\n')
+            continue
+        xq = input('>请输入学期: ' + str(xq_options) + ' ')
+        if xq not in xq_options:
+            print('请输入选项内的信息\n')
+            continue
+        if xn != xn_default and xq != xq_default:
+            print('系统不支持同时更换学期与学年，请重新输入\n')
+        break
 
+    # 构造post信息并获取页面
+    if xq == xq_default and xn == xn_default:
+        print_table(bs_obj)
+        return
+    elif xn != xn_default:
+        post_data = {'__EVENTTARGET': 'xnd', '__EVENTARGUMENT': xn, '__VIEWSTATE': viewstate,
+                     'xnd': xn, 'xqd': xq}
+    elif xq != xq_default:
+        post_data = {'__EVENTTARGET': 'xqd', '__EVENTARGUMENT': xq, '__VIEWSTATE': viewstate,
+                     'xnd': xn, 'xqd': xq}
+    else:
+        raise ValueError
+    table_response = session.post(table_url, post_data)
+    bs_obj = BeautifulSoup(table_response.text, 'lxml')
     print_table(bs_obj)
+    return
 
 
 def spider(response, session):
@@ -85,7 +107,6 @@ def spider(response, session):
     name = xhxm_string.split(' ')[-1:][0]
     print('你好！' + name)
     print('你的学号：' + usernumber)
-    # name = name.replace('同学', '')
     print('-------------------')
 
     table_headers = HEADERS
@@ -107,8 +128,10 @@ def get_code(session):
 
 def login(url, session):
     while True:
-        username = input('请输入学号:')
-        password = input('请输入密码:')
+        # username = input('请输入学号:')
+        # password = input('请输入密码:')
+        username = '169024014'
+        password = '0714sxd'
         html = session.get(url).text
         bs_obj = BeautifulSoup(html, 'html.parser')
         viewstate = bs_obj.find('input', {'name': '__VIEWSTATE'})['value']
@@ -130,15 +153,10 @@ def login(url, session):
 def main():
     session = requests.session()
     session.headers.update(HEADERS)
-    try:
-        response = login('http://211.70.149.135:88/default2.aspx', session)
-        spider(response, session)
-    except Exception as er:
-        print('网络连接错误!\ninfomation:', end='')
-        print(er)
+    response = login('http://211.70.149.135:88/default2.aspx', session)
+    spider(response, session)
     session.close()
 
 
 if __name__ == '__main__':
     main()
-
