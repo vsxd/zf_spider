@@ -128,10 +128,8 @@ def get_code(session):
 
 def login(url, session):
     while True:
-        # username = input('请输入学号:')
-        # password = input('请输入密码:')
-        username = '169024014'
-        password = '0714sxd'
+        username = input('请输入学号:')
+        password = input('请输入密码:')
         html = session.get(url).text
         bs_obj = BeautifulSoup(html, 'html.parser')
         viewstate = bs_obj.find('input', {'name': '__VIEWSTATE'})['value']
