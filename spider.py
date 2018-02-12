@@ -10,30 +10,36 @@ HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
     'Accept-Encoding': 'gzip, deflate',
     'Accept-Language': 'zh-CN,zh;q=0.9',
-    'Cache-Control': 'max-age=0',
     'Connection': 'keep-alive',
     'Host': '211.70.149.135:88',
-    'Upgrade-Insecure-Requests': '1',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
     AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.99 Safari/537.36'
 }
 
 
 def print_table(bs_obj):
-    tbody = bs_obj.find('table', {'class': 'blacktab'})
+    '''按格式输出页面中的课表信息 参数为beautifulsoup对象'''
+    tbody = bs_obj.find('table', {'class': 'blacktab'})  # 注意tbody标签在html中实际并不存在 是browser自己加的
     trs = tbody.select('tr')
-    table = []
+    table = []  # 用于存放课表信息的二维list
     for index in range(len(trs)):
-        if index % 2 is not 1:
-            tds = trs[index].select('td')
-            row = [re.search('(?<=>).+?(?=<)', str(td)).group(0) for td in tds]
-            table.append(row)
+        if index % 2 is not 1:  # 隔行选择课程信息 因为每节课均为两个课时 信息均在偶数行
+            tds = trs[index].select('td')  # td标签存了表格中一行的数据
+            row = []  # 行
+            for td in tds:  # 本行中单个数据
+                infos = re.findall('(?<=>).+?(?=<)', str(td))  # 正则匹配到课程信息
+                info = infos[0]  # 第一个为课程名称 或 表头文字
+                if len(infos) > 3:  # 表头文字没有更多信息
+                    info += '\n' + infos[1] + '\n' + infos[2] + '\n' + infos[3]  # 课程的更多信息
+                row.append(info)  # 在行中加入信息
+            table.append(row)  # 把行加入表格
     for row in table:
+        # 清洗信息 删除多余
         if row[0] == '上午' or row[0] == '下午' or row[0] == '晚上':
             row.remove(row[0])
-    table.pop()
+    table.pop()  # 清洗信息
 
-    pretty_table = PrettyTable()
+    pretty_table = PrettyTable()  # 使用prettytable库打印表格
     pretty_table.field_names = table[0]
     for index in range(1, len(table)):
         pretty_table.add_row(table[index])
@@ -41,6 +47,7 @@ def print_table(bs_obj):
 
 
 def parse_table(table_url, session):
+    '''与用户交互 解析基本信息 并请求响应的课表页面 传入默认的table的url 和session对象'''
     response = session.get(table_url)
     bs_obj = BeautifulSoup(response.text, 'lxml')
     viewstate = bs_obj.find('input', {'name': '__VIEWSTATE'})['value']
@@ -80,7 +87,7 @@ def parse_table(table_url, session):
 
     # 构造post信息并获取页面
     if xq == xq_default and xn == xn_default:
-        print_table(bs_obj)
+        print_table(bs_obj)  # 直接获取默认课表页面
         return
     elif xn != xn_default:
         post_data = {'__EVENTTARGET': 'xnd', '__EVENTARGUMENT': xn, '__VIEWSTATE': viewstate,
@@ -90,13 +97,14 @@ def parse_table(table_url, session):
                      'xnd': xn, 'xqd': xq}
     else:
         raise ValueError
-    table_response = session.post(table_url, post_data)
+    table_response = session.post(table_url, post_data)  # 请求选择的课表页面
     bs_obj = BeautifulSoup(table_response.text, 'lxml')
     print_table(bs_obj)
     return
 
 
 def spider(response, session):
+    '''爬虫入口 确认学生信息 扩展功能'''
     url = response.url
     print('-------------------')
     base_url = url[:25]
@@ -109,6 +117,7 @@ def spider(response, session):
     print('你的学号：' + usernumber)
     print('-------------------')
 
+    # 解析课表
     table_headers = HEADERS
     table_headers['Referer'] = url
     session.headers.update(table_headers)
@@ -118,15 +127,17 @@ def spider(response, session):
 
 
 def get_code(session):
-    response = session.get('http://211.70.149.135:88/CheckCode.aspx')
+    '''获取验证码并返回验证码字符串'''
+    response = session.get('http://211.70.149.135:88/CheckCode.aspx')  # 因为教务系统验证码地址固定 所以写死了
     pic = BytesIO(response.content)
     pic = Image.open(pic)
     pic.show()
-    code = input('验证码:')
+    code = input('验证码:')  # 这里暂由用户手动输入验证码
     return code
 
 
 def login(url, session):
+    '''登陆函数 获取学生信息 登陆建立session'''
     while True:
         username = input('请输入学号:')
         password = input('请输入密码:')
