@@ -9,7 +9,6 @@ import re
 HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
     'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'zh-CN,zh;q=0.9',
     'Connection': 'keep-alive',
     'Host': '211.70.149.135:88',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
@@ -152,7 +151,7 @@ def login(url, session):
         response.encoding = response.apparent_encoding
         bs_obj = BeautifulSoup(response.text, 'lxml')
         title = bs_obj.find('title').get_text()
-        if '请' not in list(title):
+        if '请' not in list(title):  # 判断是否登录成功
             return response
         else:
             print('输入信息错误，请重试')
