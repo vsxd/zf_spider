@@ -6,6 +6,84 @@ from PIL import Image
 from io import BytesIO
 import re
 
+class InfoDisplay:
+    def __init__(self):
+        pass
+    
+    def print_course_table(self):
+        pass
+    
+    def print_stu_info(self):
+        pass
+
+
+class InfoStorage:
+    HEADERS = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        'Host': '211.70.149.135:88',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
+        AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.99 Safari/537.36'
+    }
+    Session = None
+    Username = None
+    Password = None
+    Validating_Code = None
+    Logined = False
+    Html_Page = None
+    BS_Obj = None
+    URL = 'http://211.70.149.135:88/default2.aspx'
+
+
+    @staticmethod
+    def get_code():
+        '''获取验证码并返回验证码字符串'''
+        response = InfoStorage.Session.get('http://211.70.149.135:88/CheckCode.aspx')  # 因为教务系统验证码地址固定 所以写死了
+        pic = BytesIO(response.content)
+        pic = Image.open(pic)
+        pic.show()
+        InfoStorage.Validating_Code = input('验证码:')  # 这里暂由用户手动输入验证码
+        
+
+    @staticmethod
+    def login():
+        if InfoStorage.Session is None:
+            print('Session is None')
+            return
+        if InfoStorage.Logined is True:
+            print('Already Login')
+            return
+        InfoStorage.Session.headers.update(InfoStorage.HEADERS)
+        while InfoStorage.Logined is False:
+            InfoStorage.Username = input('请输入学号:')
+            InfoStorage.Password = input('请输入密码:')
+            html = InfoStorage.Session.get(InfoStorage.URL).text
+            bs_obj = BeautifulSoup(html, 'html.parser')
+            viewstate = bs_obj.find('input', {'name': '__VIEWSTATE'})['value']
+            InfoStorage.get_code()
+            post_data = {'__VIEWSTATE': viewstate, 'TextBox1': InfoStorage.Username,
+                         'TextBox2': InfoStorage.Password, 'TextBox3': InfoStorage.Validating_Code, 'RadioButtonList1': '',
+                         'Button1': '', 'lbLanguage': ''}
+            InfoStorage.Html_Page = InfoStorage.Session.post(InfoStorage.URL, post_data)
+            InfoStorage.Html_Page.encoding = InfoStorage.Html_Page.apparent_encoding
+            InfoStorage.BS_Obj = BeautifulSoup(InfoStorage.Html_Page.text, 'lxml')
+            title = InfoStorage.BS_Obj.find('title').get_text()
+            if '请' not in title:  # 判断是否登录成功
+                print('登陆成功')
+                InfoStorage.Logined = True
+            else:
+                print('输入信息错误，请重试')
+    
+
+
+
+class Parser:
+    def __init__(self):
+        pass
+    
+
+
 HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
     'Accept-Encoding': 'gzip, deflate',
@@ -151,7 +229,7 @@ def login(url, session):
         response.encoding = response.apparent_encoding
         bs_obj = BeautifulSoup(response.text, 'lxml')
         title = bs_obj.find('title').get_text()
-        if '请' not in list(title):  # 判断是否登录成功
+        if '请' not in title:  # 判断是否登录成功
             return response
         else:
             print('输入信息错误，请重试')
@@ -167,4 +245,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    InfoStorage.Session = requests.session()
+    InfoStorage.login()
