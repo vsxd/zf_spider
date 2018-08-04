@@ -250,8 +250,14 @@ def main():
     spider(response, session)
     session.close()
 
+def menu():
+    print(' -'*20)
+    print('      方正教务系统爬虫 for AHUT')
+    print(' -'*20)
 
 if __name__ == '__main__':
     # main()
     InfoStorage.SESSION = requests.session()
     InfoStorage.login()
+
+    InfoStorage.SESSION.close()
