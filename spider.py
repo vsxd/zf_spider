@@ -6,13 +6,14 @@ from PIL import Image
 from io import BytesIO
 import re
 
+
 class InfoDisplay:
     def __init__(self):
         pass
-    
+
     def print_course_table(self):
         pass
-    
+
     def print_stu_info(self):
         pass
 
@@ -26,62 +27,60 @@ class InfoStorage:
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
         AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.99 Safari/537.36'
     }
-    Session = None
-    Username = None
-    Password = None
-    Validating_Code = None
-    Logined = False
-    Html_Page = None
-    BS_Obj = None
     URL = 'http://211.70.149.135:88/default2.aspx'
+    VCODE_URL = 'http://211.70.149.135:88/CheckCode.aspx'
+    LOGIN_INFO = {'logined': False,
+                  'bsobj': None}
+
+    COURSE_TABLE_INFO = {}
+    SELECT_COURSE_INFO = {}
+    SESSION = None
 
 
     @staticmethod
     def get_code():
         '''获取验证码并返回验证码字符串'''
-        response = InfoStorage.Session.get('http://211.70.149.135:88/CheckCode.aspx')  # 因为教务系统验证码地址固定 所以写死了
+        response = InfoStorage.SESSION.get(InfoStorage.VCODE_URL)
         pic = BytesIO(response.content)
         pic = Image.open(pic)
         pic.show()
-        InfoStorage.Validating_Code = input('验证码:')  # 这里暂由用户手动输入验证码
-        
+        code = input('验证码:')  # 这里暂由用户手动输入验证码
+        return code
 
     @staticmethod
     def login():
-        if InfoStorage.Session is None:
-            print('Session is None')
+        if InfoStorage.SESSION is None:
+            print('SESSION is None')
             return
-        if InfoStorage.Logined is True:
+        if InfoStorage.LOGIN_INFO['logined'] is True:
             print('Already Login')
             return
-        InfoStorage.Session.headers.update(InfoStorage.HEADERS)
-        while InfoStorage.Logined is False:
-            InfoStorage.Username = input('请输入学号:')
-            InfoStorage.Password = input('请输入密码:')
-            html = InfoStorage.Session.get(InfoStorage.URL).text
+        InfoStorage.SESSION.headers.update(InfoStorage.HEADERS)
+        while InfoStorage.LOGIN_INFO['logined'] is False:
+            username = input('请输入学号:')
+            password = input('请输入密码:')
+            html = InfoStorage.SESSION.get(InfoStorage.URL).text
             bs_obj = BeautifulSoup(html, 'html.parser')
             viewstate = bs_obj.find('input', {'name': '__VIEWSTATE'})['value']
-            InfoStorage.get_code()
-            post_data = {'__VIEWSTATE': viewstate, 'TextBox1': InfoStorage.Username,
-                         'TextBox2': InfoStorage.Password, 'TextBox3': InfoStorage.Validating_Code, 'RadioButtonList1': '',
+            validating_code = InfoStorage.get_code()
+            post_data = {'__VIEWSTATE': viewstate, 'TextBox1': username,
+                         'TextBox2': password, 'TextBox3': validating_code, 'RadioButtonList1': '',
                          'Button1': '', 'lbLanguage': ''}
-            InfoStorage.Html_Page = InfoStorage.Session.post(InfoStorage.URL, post_data)
-            InfoStorage.Html_Page.encoding = InfoStorage.Html_Page.apparent_encoding
-            InfoStorage.BS_Obj = BeautifulSoup(InfoStorage.Html_Page.text, 'lxml')
-            title = InfoStorage.BS_Obj.find('title').get_text()
+            page = InfoStorage.SESSION.post(InfoStorage.URL, post_data)
+            page.encoding = page.apparent_encoding
+            InfoStorage.LOGIN_INFO['bsobj'] = BeautifulSoup(page.text, 'lxml')
+            title = InfoStorage.LOGIN_INFO['bsobj'].find('title').get_text()
             if '请' not in title:  # 判断是否登录成功
                 print('登陆成功')
-                InfoStorage.Logined = True
+                InfoStorage.LOGIN_INFO['logined'] = True
+                print(InfoStorage.LOGIN_INFO)
             else:
                 print('输入信息错误，请重试')
-    
-
 
 
 class Parser:
     def __init__(self):
         pass
-    
 
 
 HEADERS = {
@@ -96,7 +95,8 @@ HEADERS = {
 
 def print_table(bs_obj):
     '''按格式输出页面中的课表信息 参数为beautifulsoup对象'''
-    tbody = bs_obj.find('table', {'class': 'blacktab'})  # 注意tbody标签在html中实际并不存在 是browser自己加的
+    tbody = bs_obj.find('table', {'class': 'blacktab'}
+                        )  # 注意tbody标签在html中实际并不存在 是browser自己加的
     trs = tbody.select('tr')
     table = []  # 用于存放课表信息的二维list
     for index in range(len(trs)):
@@ -107,7 +107,8 @@ def print_table(bs_obj):
                 infos = re.findall('(?<=>).+?(?=<)', str(td))  # 正则匹配到课程信息
                 info = infos[0]  # 第一个为课程名称 或 表头文字
                 if len(infos) > 3:  # 表头文字没有更多信息
-                    info += '\n' + infos[1] + '\n' + infos[2] + '\n' + infos[3]  # 课程的更多信息
+                    info += '\n' + infos[1] + '\n' + \
+                        infos[2] + '\n' + infos[3]  # 课程的更多信息
                 row.append(info)  # 在行中加入信息
             table.append(row)  # 把行加入表格
     for row in table:
@@ -135,11 +136,14 @@ def parse_table(table_url, session):
     xn_options = tr.find('select').find_all('option')
     xn_options = [option.get_text() for option in xn_options]
     xq_options = ['1', '2']
-    xn_default = tr.find('select', {'name': 'xnd'}).find('option', {'selected': 'selected'}).string
-    xq_default = tr.find('select', {'name': 'xqd'}).find('option', {'selected': 'selected'}).string
+    xn_default = tr.find('select', {'name': 'xnd'}).find(
+        'option', {'selected': 'selected'}).string
+    xq_default = tr.find('select', {'name': 'xqd'}).find(
+        'option', {'selected': 'selected'}).string
 
     # 抽取并显示学生个人信息
-    tr = table.find('table', {'class': 'formlist noprint'}).find('tr', {'class': 'trbg1'})
+    tr = table.find('table', {'class': 'formlist noprint'}).find(
+        'tr', {'class': 'trbg1'})
     infos = tr.find_all('span')
     infos = [info.get_text() for info in infos]
     print('---------------------------------------------------------------------------')
@@ -187,7 +191,8 @@ def spider(response, session):
     base_url = url[:25]
     bs_obj = BeautifulSoup(response.text, 'lxml')
 
-    xhxm_string = bs_obj.find('div', {'class': 'info'}).find('span', id='xhxm').get_text()
+    xhxm_string = bs_obj.find('div', {'class': 'info'}).find(
+        'span', id='xhxm').get_text()
     usernumber = xhxm_string[:9]
     name = xhxm_string.split(' ')[-1:][0]
     print('你好！' + name)
@@ -198,14 +203,16 @@ def spider(response, session):
     table_headers = HEADERS
     table_headers['Referer'] = url
     session.headers.update(table_headers)
-    table_url = bs_obj.find('ul', {'class': 'nav'}).find('a', {'onclick': "GetMc('学生个人课表');"})
+    table_url = bs_obj.find('ul', {'class': 'nav'}).find(
+        'a', {'onclick': "GetMc('学生个人课表');"})
     table_url = base_url + table_url['href']
     parse_table(table_url, session)
 
 
 def get_code(session):
     '''获取验证码并返回验证码字符串'''
-    response = session.get('http://211.70.149.135:88/CheckCode.aspx')  # 因为教务系统验证码地址固定 所以写死了
+    response = session.get(
+        'http://211.70.149.135:88/CheckCode.aspx')  # 因为教务系统验证码地址固定 所以写死了
     pic = BytesIO(response.content)
     pic = Image.open(pic)
     pic.show()
@@ -246,5 +253,5 @@ def main():
 
 if __name__ == '__main__':
     # main()
-    InfoStorage.Session = requests.session()
+    InfoStorage.SESSION = requests.session()
     InfoStorage.login()
