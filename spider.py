@@ -31,11 +31,26 @@ class InfoStorage:
     URL = 'http://211.70.149.135:88/default2.aspx'
     VCODE_URL = 'http://211.70.149.135:88/CheckCode.aspx'
     LOGIN_INFO = {'logined': False,
-                  'bsobj': None}
+                  'bsobj': None,
+                  'response': None}
 
     COURSE_TABLE_INFO = {}
+    EXAM_TABLE_INFO = {}
     SELECT_COURSE_INFO = {}
     SESSION = None
+
+    @staticmethod
+    def print_student_info():
+        url = InfoStorage.LOGIN_INFO['response']
+        print('-------------------')
+        # base_url = url[:25]
+        xhxm_string = InfoStorage.LOGIN_INFO['bsobj'].find('div', {'class': 'info'}).find(
+            'span', id='xhxm').get_text()
+        usernumber = xhxm_string[:9]
+        name = xhxm_string.split(' ')[-1:][0]
+        print('你好！' + name)
+        print('你的学号：' + usernumber)
+        print('-------------------')
 
 
     @staticmethod
@@ -73,9 +88,9 @@ class InfoStorage:
                          'TextBox2': password, 'TextBox3': validating_code, 'RadioButtonList1': '',
                          'Button1': '', 'lbLanguage': ''}
             try:             
-                page = InfoStorage.SESSION.post(InfoStorage.URL, post_data)
-                page.encoding = page.apparent_encoding
-                InfoStorage.LOGIN_INFO['bsobj'] = BeautifulSoup(page.text, 'lxml')
+                InfoStorage.LOGIN_INFO['response'] = InfoStorage.SESSION.post(InfoStorage.URL, post_data)
+                InfoStorage.LOGIN_INFO['response'].encoding = InfoStorage.LOGIN_INFO['response'].apparent_encoding
+                InfoStorage.LOGIN_INFO['bsobj'] = BeautifulSoup(InfoStorage.LOGIN_INFO['response'].text, 'lxml')
                 title = InfoStorage.LOGIN_INFO['bsobj'].find('title').get_text()
             except Exception as e:
                 print(e)
@@ -84,12 +99,14 @@ class InfoStorage:
             if '请' not in title:  # 判断是否登录成功
                 print('登陆成功')
                 InfoStorage.LOGIN_INFO['logined'] = True
-                print(InfoStorage.LOGIN_INFO)
+                InfoStorage.print_student_info()
+                input('按回车键继续操作')
             else:
                 print('输入信息错误，请重试')
+            
 
 
-class Parser:
+class CourseTableParser:
     def __init__(self):
         pass
 
@@ -265,15 +282,25 @@ def menu():
     print(' -'*20)
     print('      方正教务系统爬虫 for AHUT')
     print(' -'*20)
-    menu_item = {'1': course_table(),
-                '2': exam_timetable(),
-                '3': fast_select_course()}
-
+    menu_item = {'0': InfoStorage.login,
+                '1': 1,
+                '2': 2,
+                '3': 3,
+                '4': exit}
+    print('     请输入功能的数字序号以进行后续操作')
+    print('     + 0.登陆用户')
+    print('     + 1.显示课表')
+    print('     + 2.显示考试时间')
+    print('     + 3.抢课')
+    print('     + 4.退出程序')
+    print(' -'*20)
+    input_selection = input()
+    menu_item.get(input_selection)()
 
 
 if __name__ == '__main__':
     # main()
     InfoStorage.SESSION = requests.session()
-    InfoStorage.login()
-    menu()
+    while True:
+        menu()
     InfoStorage.SESSION.close()
