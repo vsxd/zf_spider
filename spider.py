@@ -5,6 +5,7 @@ from prettytable import PrettyTable
 from PIL import Image
 from io import BytesIO
 import re
+import getpass
 
 
 class InfoDisplay:
@@ -58,18 +59,28 @@ class InfoStorage:
         InfoStorage.SESSION.headers.update(InfoStorage.HEADERS)
         while InfoStorage.LOGIN_INFO['logined'] is False:
             username = input('请输入学号:')
-            password = input('请输入密码:')
-            html = InfoStorage.SESSION.get(InfoStorage.URL).text
-            bs_obj = BeautifulSoup(html, 'html.parser')
-            viewstate = bs_obj.find('input', {'name': '__VIEWSTATE'})['value']
-            validating_code = InfoStorage.get_code()
+            password = getpass.getpass('请输入密码:')
+            try:
+                html = InfoStorage.SESSION.get(InfoStorage.URL).text
+                bs_obj = BeautifulSoup(html, 'html.parser')
+                viewstate = bs_obj.find('input', {'name': '__VIEWSTATE'})['value']
+                validating_code = InfoStorage.get_code()
+            except Exception as e:
+                print(e)
+                print('网络错误')
+                continue
             post_data = {'__VIEWSTATE': viewstate, 'TextBox1': username,
                          'TextBox2': password, 'TextBox3': validating_code, 'RadioButtonList1': '',
                          'Button1': '', 'lbLanguage': ''}
-            page = InfoStorage.SESSION.post(InfoStorage.URL, post_data)
-            page.encoding = page.apparent_encoding
-            InfoStorage.LOGIN_INFO['bsobj'] = BeautifulSoup(page.text, 'lxml')
-            title = InfoStorage.LOGIN_INFO['bsobj'].find('title').get_text()
+            try:             
+                page = InfoStorage.SESSION.post(InfoStorage.URL, post_data)
+                page.encoding = page.apparent_encoding
+                InfoStorage.LOGIN_INFO['bsobj'] = BeautifulSoup(page.text, 'lxml')
+                title = InfoStorage.LOGIN_INFO['bsobj'].find('title').get_text()
+            except Exception as e:
+                print(e)
+                print('网络解析错误')
+                return
             if '请' not in title:  # 判断是否登录成功
                 print('登陆成功')
                 InfoStorage.LOGIN_INFO['logined'] = True
@@ -254,10 +265,15 @@ def menu():
     print(' -'*20)
     print('      方正教务系统爬虫 for AHUT')
     print(' -'*20)
+    menu_item = {'1': course_table(),
+                '2': exam_timetable(),
+                '3': fast_select_course()}
+
+
 
 if __name__ == '__main__':
     # main()
     InfoStorage.SESSION = requests.session()
     InfoStorage.login()
-
+    menu()
     InfoStorage.SESSION.close()
