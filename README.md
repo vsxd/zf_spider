@@ -18,3 +18,4 @@
     > (venv) $ pip3 install -r requirements.txt
     5. 在虚拟环境中启动main程序
     > (venv) $ python3 ./main.py
+    

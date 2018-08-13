@@ -62,8 +62,10 @@ class InfoStorage:
             return
         InfoStorage.SESSION.headers.update(InfoStorage.HEADERS)
         while InfoStorage.LOGIN_INFO['logined'] is False:
-            username = input('请输入学号:')
-            password = getpass.getpass('请输入密码:')
+            # username = input('请输入学号:')
+            # password = getpass.getpass('请输入密码:')
+            username = '169024014'
+            password = '0714sxd'
             try:
                 html = InfoStorage.SESSION.get(InfoStorage.URL).text
                 bs_obj = BeautifulSoup(html, 'html.parser')
@@ -202,6 +204,57 @@ class CourseTableParser:
             if row[0] == '上午' or row[0] == '下午' or row[0] == '晚上':
                 row.remove(row[0])
         table.pop()  # 清洗信息
+
+        self.pretty_table = PrettyTable()  # 使用prettytable库打印表格
+        self.pretty_table.field_names = table[0]
+        for index in range(1, len(table)):
+            self.pretty_table.add_row(table[index])
+        print(self.pretty_table)
+
+
+class CourseTimeTableParser():
+    def __init__(self):
+        self.session = None
+        self.table_url = None
+        self.bs_obj = None
+        self.pretty_table = None
+    
+    @staticmethod
+    def start():
+        if InfoStorage.LOGIN_INFO['logined'] is False:
+            print('你还没有登陆，请登录后使用其他功能')
+            return
+        cttp = CourseTimeTableParser()
+        cttp.session = InfoStorage.SESSION
+        response_url = InfoStorage.LOGIN_INFO['response'].url
+        table_headers = InfoStorage.HEADERS
+        table_headers['Referer'] = response_url
+        cttp.session.headers.update(table_headers)
+        table_url = InfoStorage.LOGIN_INFO['bsobj'].find('ul', {'class': 'nav'}).find(
+        'a', {'onclick': "GetMc('学生考试查询');"})
+        cttp.table_url = response_url[:25] + table_url['href']
+
+        table_response = cttp.session.post(cttp.table_url)
+        cttp.bs_obj = BeautifulSoup(table_response.text, 'lxml')
+
+        cttp.print_table()
+
+
+    
+    def print_table(self):
+        '''按格式输出页面中的课表信息 参数为beautifulsoup对象'''
+        tbody = self.bs_obj.find('table', {'class': 'datelist'}
+                            )
+        trs = tbody.select('tr')
+        table = []  # 用于存放信息的二维list
+        for index in range(len(trs)):
+            tds = trs[index].select('td')
+            row = []  # 行
+            for index in range(len(tds)):
+                if index != 0 and index != 2 and index != 5:  # 数据清洗
+                    infos = re.findall('(?<=>).+?(?=<)', str(tds[index])) 
+                    row.append(infos[0])
+            table.append(row)
 
         self.pretty_table = PrettyTable()  # 使用prettytable库打印表格
         self.pretty_table.field_names = table[0]

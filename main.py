@@ -1,5 +1,6 @@
 from spider import InfoStorage
 from spider import CourseTableParser
+from spider import CourseTimeTableParser
 import requests
 
 def menu():
@@ -8,7 +9,7 @@ def menu():
     print(' -'*20)
     menu_item = {'1': InfoStorage.login,
                 '2': CourseTableParser.start,
-                '3': 2,
+                '3': CourseTimeTableParser.start,
                 '4': 3,
                 'q': exit}
     print('     请输入功能的数字序号以进行后续操作')
