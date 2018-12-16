@@ -62,10 +62,8 @@ class InfoStorage:
             return
         InfoStorage.SESSION.headers.update(InfoStorage.HEADERS)
         while InfoStorage.LOGIN_INFO['logined'] is False:
-            # username = input('请输入学号:')
-            # password = getpass.getpass('请输入密码:')
-            username = '169024014'
-            password = '0714sxd'
+            username = input('请输入学号:')
+            password = getpass.getpass('请输入密码:')
             try:
                 html = InfoStorage.SESSION.get(InfoStorage.URL).text
                 bs_obj = BeautifulSoup(html, 'html.parser')
@@ -78,7 +76,7 @@ class InfoStorage:
             post_data = {'__VIEWSTATE': viewstate, 'TextBox1': username,
                          'TextBox2': password, 'TextBox3': validating_code, 'RadioButtonList1': '',
                          'Button1': '', 'lbLanguage': ''}
-            try:             
+            try:
                 InfoStorage.LOGIN_INFO['response'] = InfoStorage.SESSION.post(InfoStorage.URL, post_data)
                 InfoStorage.LOGIN_INFO['response'].encoding = InfoStorage.LOGIN_INFO['response'].apparent_encoding
                 InfoStorage.LOGIN_INFO['bsobj'] = BeautifulSoup(InfoStorage.LOGIN_INFO['response'].text, 'lxml')
@@ -167,7 +165,7 @@ class CourseTableParser:
 
         # 构造post信息并获取页面
         if xq == xq_default and xn == xn_default:
-            print_table(bs_obj)  # 直接获取默认课表页面
+            self.print_table()  # 直接获取默认课表页面
             return
         elif xn != xn_default:
             post_data = {'__EVENTTARGET': 'xnd', '__EVENTARGUMENT': xn, '__VIEWSTATE': viewstate,

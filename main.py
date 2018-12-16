@@ -34,3 +34,7 @@ if __name__ == '__main__':
         print()
         print('程序终止  Bye~')
         exit(0)
+    except Exception as e:
+        print(e)
+        print('Catch an exception, contact author please.')
+        exit(0)
