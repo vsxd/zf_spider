@@ -1,5 +1,5 @@
-requests==2.20.0
-bs4==0.0.1
-prettytable==0.7.2
-pillow==5.2.0
-lxml==4.2.1
+requests
+bs4
+prettytable
+pillow
+lxml

@@ -41,10 +41,9 @@ class InfoStorage:
         print('你的学号：' + usernumber)
         print('-------------------')
 
-
     @staticmethod
     def get_code():
-        '''获取验证码并返回验证码字符串'''
+        # 获取验证码并返回验证码字符串
         response = InfoStorage.SESSION.get(InfoStorage.VCODE_URL)
         pic = BytesIO(response.content)
         pic = Image.open(pic)
@@ -92,7 +91,6 @@ class InfoStorage:
                 input('按回车键继续操作')
             else:
                 print('输入信息错误，请重试')
-            
 
 
 class CourseTableParser:
@@ -101,7 +99,7 @@ class CourseTableParser:
         self.table_url = None
         self.bs_obj = None
         self.pretty_table = None
-    
+
     @staticmethod
     def start():
         if InfoStorage.LOGIN_INFO['logined'] is False:
@@ -114,15 +112,14 @@ class CourseTableParser:
         table_headers['Referer'] = response_url
         ctp.session.headers.update(table_headers)
         table_url = InfoStorage.LOGIN_INFO['bsobj'].find('ul', {'class': 'nav'}).find(
-        'a', {'onclick': "GetMc('学生个人课表');"})
+            'a', {'onclick': "GetMc('学生个人课表');"})
         ctp.table_url = response_url[:25] + table_url['href']
 
         ctp.parse_table()
         ctp.print_table()
 
-
     def parse_table(self):
-        '''与用户交互 解析基本信息 并请求响应的课表页面 传入默认的table的url 和session对象'''
+        # 与用户交互 解析基本信息 并请求响应的课表页面 传入默认的table的url 和session对象
         response = self.session.get(self.table_url)
         bs_obj = BeautifulSoup(response.text, 'lxml')
         viewstate = bs_obj.find('input', {'name': '__VIEWSTATE'})['value']
@@ -163,26 +160,30 @@ class CourseTableParser:
             #     print('系统不支持同时更换学期与学年，请重新输入\n')
             break
 
-        # 构造post信息并获取页面
-        if xq == xq_default and xn == xn_default:
-            self.print_table()  # 直接获取默认课表页面
-            return
-        elif xn != xn_default:
-            post_data = {'__EVENTTARGET': 'xnd', '__EVENTARGUMENT': xn, '__VIEWSTATE': viewstate,
+        post_data = {'__EVENTTARGET': 'xnd', '__EVENTARGUMENT': xn, '__VIEWSTATE': viewstate,
                          'xnd': xn, 'xqd': xq}
-        elif xq != xq_default:
-            post_data = {'__EVENTTARGET': 'xqd', '__EVENTARGUMENT': xq, '__VIEWSTATE': viewstate,
-                         'xnd': xn, 'xqd': xq}
-        else:
-            raise ValueError
+
+        # # 构造post信息并获取页面
+        # if xq == xq_default and xn == xn_default:
+            # self.print_table()  # 直接获取默认课表页面
+            # return
+        #     pass
+        # elif xn != xn_default:
+        #     post_data = {'__EVENTTARGET': 'xnd', '__EVENTARGUMENT': xn, '__VIEWSTATE': viewstate,
+        #                  'xnd': xn, 'xqd': xq}
+        # elif xq != xq_default:
+        #     post_data = {'__EVENTTARGET': 'xqd', '__EVENTARGUMENT': xq, '__VIEWSTATE': viewstate,
+        #                  'xnd': xn, 'xqd': xq}
+        # else:
+        #     raise ValueError
         table_response = self.session.post(self.table_url, post_data)  # 请求选择的课表页面
         self.bs_obj = BeautifulSoup(table_response.text, 'lxml')
         return
 
     def print_table(self):
-        '''按格式输出页面中的课表信息 参数为beautifulsoup对象'''
+        # 按格式输出页面中的课表信息 参数为beautifulsoup对象
         tbody = self.bs_obj.find('table', {'class': 'blacktab'}
-                            )  # 注意tbody标签在html中实际并不存在 是browser自己加的
+                                 )  # 注意tbody标签在html中实际并不存在 是browser自己加的
         trs = tbody.select('tr')
         table = []  # 用于存放课表信息的二维list
         for index in range(len(trs)):
@@ -191,10 +192,10 @@ class CourseTableParser:
                 row = []  # 行
                 for td in tds:  # 本行中单个数据
                     infos = re.findall('(?<=>).+?(?=<)', str(td))  # 正则匹配到课程信息
-                    info = infos[0]  # 第一个为课程名称 或 表头文字
+                    info = infos[0] if len(infos) > 0 else ''  # 第一个为课程名称 或 表头文字
                     if len(infos) > 3:  # 表头文字没有更多信息
                         info += '\n' + infos[1] + '\n' + \
-                            infos[2] + '\n' + infos[3] + '\n' # 课程的更多信息
+                                infos[2] + '\n' + infos[3] + '\n'  # 课程的更多信息
                     row.append(info)  # 在行中加入信息
                 table.append(row)  # 把行加入表格
         for row in table:
@@ -216,7 +217,7 @@ class CourseTimeTableParser():
         self.table_url = None
         self.bs_obj = None
         self.pretty_table = None
-    
+
     @staticmethod
     def start():
         if InfoStorage.LOGIN_INFO['logined'] is False:
@@ -229,7 +230,7 @@ class CourseTimeTableParser():
         table_headers['Referer'] = response_url
         cttp.session.headers.update(table_headers)
         table_url = InfoStorage.LOGIN_INFO['bsobj'].find('ul', {'class': 'nav'}).find(
-        'a', {'onclick': "GetMc('学生考试查询');"})
+            'a', {'onclick': "GetMc('学生考试查询');"})
         cttp.table_url = response_url[:25] + table_url['href']
 
         table_response = cttp.session.post(cttp.table_url)
@@ -237,12 +238,10 @@ class CourseTimeTableParser():
 
         cttp.print_table()
 
-
-    
     def print_table(self):
-        '''按格式输出页面中的课表信息 参数为beautifulsoup对象'''
+        # 按格式输出页面中的课表信息 参数为beautifulsoup对象
         tbody = self.bs_obj.find('table', {'class': 'datelist'}
-                            )
+                                 )
         trs = tbody.select('tr')
         table = []  # 用于存放信息的二维list
         for index in range(len(trs)):
@@ -250,12 +249,51 @@ class CourseTimeTableParser():
             row = []  # 行
             for index in range(len(tds)):
                 if index != 0 and index != 2 and index != 5:  # 数据清洗
-                    infos = re.findall('(?<=>).+?(?=<)', str(tds[index])) 
+                    infos = re.findall('(?<=>).+?(?=<)', str(tds[index]))
                     row.append(infos[0])
             table.append(row)
 
-        self.pretty_table = PrettyTable()  # 使用prettytable库打印表格
+        self.pretty_table = PrettyTable()  # 使用prettytable打印表格
         self.pretty_table.field_names = table[0]
         for index in range(1, len(table)):
             self.pretty_table.add_row(table[index])
         print(self.pretty_table)
+
+
+class DeriveInfo:
+    def __init__(self):
+        self.session = None
+        self.table_url = None
+        self.bs_obj = None
+        self.tbody = None
+
+    @staticmethod
+    def start():
+        if InfoStorage.LOGIN_INFO['logined'] is False:
+            print('你还没有登陆，请登录后使用其他功能')
+            return
+        di = DeriveInfo()
+
+        di.session = InfoStorage.SESSION
+        response_url = InfoStorage.LOGIN_INFO['response'].url
+        table_headers = InfoStorage.HEADERS
+        table_headers['Referer'] = response_url
+        di.session.headers.update(table_headers)
+        table_url = InfoStorage.LOGIN_INFO['bsobj'].find('ul', {'class': 'nav'}).find(
+            'a', {'onclick': "GetMc('学生考试查询');"})
+        di.table_url = response_url[:25] + table_url['href']
+
+        table_response = di.session.post(di.table_url)
+        di.bs_obj = BeautifulSoup(table_response.text, 'lxml')
+
+        di.tbody = di.bs_obj.find('table', {'class': 'datelist'})
+
+        di.derive_csv()
+        di.derive_html()
+
+    
+    def derive_csv():
+        pass
+
+    def derive_html():
+        pass
