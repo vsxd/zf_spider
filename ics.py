@@ -9,7 +9,7 @@ cal.add('version', '2.0')
 cal['X-WR-CALNAME'] = '课表'
 
 event = Event()
-event.add('uid', str(uuid1()) + '@fz_spider')
+event.add('uid', str(uuid1()) + '@zf_spider')
 event.add('summary', 'Python meeting about calendaring')
 event.add('dtstart', datetime(2018, 12, 17, 8, 0, 0, tzinfo=UTC))
 event.add('dtend', datetime(2018, 12, 17, 10, 0, 0, tzinfo=UTC))

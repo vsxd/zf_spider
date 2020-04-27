@@ -6,7 +6,7 @@ import requests
 
 def menu():
     print(' -' * 20)
-    print('      方正教务系统爬虫 for AHUT')
+    print('      正方教务系统爬虫 for AHUT')
     print(' -' * 20)
     menu_item = {'1': InfoStorage.login,
                  '2': CourseTableParser.start,
